@@ -1,0 +1,288 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ============================================================
+   ScarExchange Design System
+   Trust + speed + financial professionalism.
+   Every raw colour lives here; screens use semantic tokens only.
+   ============================================================ */
+
+@theme inline {
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-mono-stack);
+  --font-heading: var(--font-inter);
+
+  /* --- Brand: deep, modern blue --- */
+  --color-brand-50: #eef3ff;
+  --color-brand-100: #dbe5ff;
+  --color-brand-200: #bfd1ff;
+  --color-brand-300: #93b0ff;
+  --color-brand-400: #6086ff;
+  --color-brand-500: #2f62fb;
+  --color-brand-600: #1652f0;
+  --color-brand-700: #0f3fcc;
+  --color-brand-800: #1235a3;
+  --color-brand-900: #142f80;
+  --color-brand-950: #0b1c52;
+
+  /* --- Success: completed trades, verified states --- */
+  --color-success-50: #ecfdf3;
+  --color-success-100: #d1fadf;
+  --color-success-200: #a6f4c5;
+  --color-success-500: #12b76a;
+  --color-success-600: #039855;
+  --color-success-700: #027a48;
+  --color-success-900: #054f31;
+
+  /* --- Warning: pending, under review --- */
+  --color-warning-50: #fffaeb;
+  --color-warning-100: #fef0c7;
+  --color-warning-200: #fedf89;
+  --color-warning-500: #f79009;
+  --color-warning-600: #dc6803;
+  --color-warning-700: #b54708;
+
+  /* --- Danger: disputes, failures, critical risk --- */
+  --color-danger-50: #fef3f2;
+  --color-danger-100: #fee4e2;
+  --color-danger-200: #fecdca;
+  --color-danger-500: #f04438;
+  --color-danger-600: #d92d20;
+  --color-danger-700: #b42318;
+
+  /* --- Neutral: the grey ramp everything is built on --- */
+  --color-neutral-25: #fcfcfd;
+  --color-neutral-50: #f9fafb;
+  --color-neutral-100: #f2f4f7;
+  --color-neutral-200: #eaecf0;
+  --color-neutral-300: #d0d5dd;
+  --color-neutral-400: #98a2b3;
+  --color-neutral-500: #667085;
+  --color-neutral-600: #475467;
+  --color-neutral-700: #344054;
+  --color-neutral-800: #1d2939;
+  --color-neutral-900: #101828;
+  --color-neutral-950: #0c111d;
+
+  /* --- Currency accents: RMB is red, NGN is green --- */
+  --color-rmb: #e5484d;
+  --color-rmb-soft: #fef3f2;
+  --color-ngn: #12b76a;
+  --color-ngn-soft: #ecfdf3;
+
+  /* --- Trade side --- */
+  --color-buy: #039855;
+  --color-buy-soft: #ecfdf3;
+  --color-sell: #d92d20;
+  --color-sell-soft: #fef3f2;
+
+  /* --- Semantic surface tokens (theme-aware, defined below) --- */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-surface: var(--surface);
+  --color-surface-subtle: var(--surface-subtle);
+  --color-hairline: var(--hairline);
+
+  /* --- Chart series --- */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* --- Sidebar --- */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* --- Radii: cards 14px, controls 10px --- */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-2xl: 14px;
+  --radius-3xl: 18px;
+  --radius-4xl: 24px;
+
+  /* --- Elevation: financial UIs stay flat; shadows are hints, not drama --- */
+  --shadow-card: 0 1px 2px 0 rgb(16 24 40 / 0.04);
+  --shadow-card-hover: 0 4px 12px -2px rgb(16 24 40 / 0.08), 0 2px 4px -2px rgb(16 24 40 / 0.04);
+  --shadow-popover: 0 12px 32px -8px rgb(16 24 40 / 0.14), 0 4px 8px -4px rgb(16 24 40 / 0.06);
+  --shadow-focus: 0 0 0 4px rgb(22 82 240 / 0.14);
+}
+
+:root {
+  --font-mono-stack: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", monospace;
+
+  --background: #f7f8fa;
+  --foreground: #101828;
+
+  --surface: #ffffff;
+  --surface-subtle: #f9fafb;
+  --hairline: #eaecf0;
+
+  --card: #ffffff;
+  --card-foreground: #101828;
+  --popover: #ffffff;
+  --popover-foreground: #101828;
+
+  --primary: #1652f0;
+  --primary-foreground: #ffffff;
+
+  --secondary: #f2f4f7;
+  --secondary-foreground: #344054;
+
+  --muted: #f9fafb;
+  --muted-foreground: #667085;
+
+  --accent: #eef3ff;
+  --accent-foreground: #0f3fcc;
+
+  --destructive: #f04438;
+
+  --border: #eaecf0;
+  --input: #d0d5dd;
+  --ring: #1652f0;
+
+  --chart-1: #1652f0;
+  --chart-2: #12b76a;
+  --chart-3: #f79009;
+  --chart-4: #f04438;
+  --chart-5: #7a5af8;
+
+  --radius: 10px;
+
+  --sidebar: #ffffff;
+  --sidebar-foreground: #475467;
+  --sidebar-primary: #1652f0;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #eef3ff;
+  --sidebar-accent-foreground: #1652f0;
+  --sidebar-border: #eaecf0;
+  --sidebar-ring: #1652f0;
+}
+
+.dark {
+  --background: #0c111d;
+  --foreground: #f9fafb;
+
+  --surface: #131a29;
+  --surface-subtle: #0f1523;
+  --hairline: #1f2a3d;
+
+  --card: #131a29;
+  --card-foreground: #f9fafb;
+  --popover: #161e2f;
+  --popover-foreground: #f9fafb;
+
+  --primary: #3b74ff;
+  --primary-foreground: #ffffff;
+
+  --secondary: #1c2537;
+  --secondary-foreground: #e4e7ec;
+
+  --muted: #161e2f;
+  --muted-foreground: #98a2b3;
+
+  --accent: #16243f;
+  --accent-foreground: #93b0ff;
+
+  --destructive: #f97066;
+
+  --border: #1f2a3d;
+  --input: #2b3648;
+  --ring: #3b74ff;
+
+  /* Dark-mode series are re-picked from the ramps and revalidated against the
+     dark surface, not flipped from light. #22ab6f passes the L 0.48–0.67 band
+     where the lighter #32d583 does not. */
+  --chart-1: #6086ff;
+  --chart-2: #22ab6f;
+  --chart-3: #fdb022;
+  --chart-4: #f97066;
+  --chart-5: #9b8afb;
+
+  --sidebar: #131a29;
+  --sidebar-foreground: #98a2b3;
+  --sidebar-primary: #3b74ff;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #16243f;
+  --sidebar-accent-foreground: #93b0ff;
+  --sidebar-border: #1f2a3d;
+  --sidebar-ring: #3b74ff;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  html {
+    @apply font-sans;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Money must never wobble as digits change. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+
+  ::selection {
+    background: var(--color-brand-100);
+    color: var(--color-brand-900);
+  }
+}
+
+@layer components {
+  /* The uppercase micro-label above each sidebar group. */
+  .nav-section-label {
+    @apply px-3 pb-2 pt-5 text-[11px] font-semibold uppercase tracking-[0.06em] text-neutral-400;
+  }
+
+  /* Thin, unobtrusive scrollbars for the long admin tables and chat panes. */
+  .scrollbar-slim {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-neutral-300) transparent;
+  }
+  .scrollbar-slim::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-slim::-webkit-scrollbar-thumb {
+    background: var(--color-neutral-300);
+    border-radius: 999px;
+  }
+  .scrollbar-slim::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
