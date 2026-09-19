@@ -35,10 +35,10 @@ function PublicHeader() {
     <header className="sticky top-0 z-30 border-b border-hairline bg-card/90 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-3 px-4 sm:px-6">
         <Link href="/" aria-label="ScarExchange home">
-          <Logo height={42} />
+          <Logo height={42} className="translate-y-[6px]" />
         </Link>
 
-        <nav className="ml-6 hidden items-center gap-1 lg:flex">
+        <nav className="ml-12 hidden items-center gap-1 lg:flex">
           {publicNav.map((item) => {
             const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
             return (

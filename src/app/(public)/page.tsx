@@ -10,6 +10,7 @@ import {
   Zap,
 } from "lucide-react";
 import { ExchangeIllustration } from "@/components/marketing/exchange-illustration";
+import { RatesPanel } from "@/components/marketing/rates-panel";
 import { marketReferenceRate, marketplaceHighlights } from "@/lib/mock/offers";
 import { formatRate } from "@/lib/money";
 
@@ -18,6 +19,7 @@ export default function LandingPage() {
     <>
       <Hero />
       <TrustStats />
+      <RatesPanel />
       <HowItWorks />
       <ClosingCta />
     </>

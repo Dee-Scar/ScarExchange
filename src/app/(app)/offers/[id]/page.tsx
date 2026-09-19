@@ -4,7 +4,7 @@ import { Clock, Info, Lock, Star } from "lucide-react";
 import { Breadcrumbs, Callout, DetailRow, Panel } from "@/components/kit/primitives";
 import { RailBadge } from "@/components/kit/payment-rail";
 import { MerchantBadge, TraderAvatar, VerifiedTick } from "@/components/kit/trader";
-import { OfferCtaButton } from "@/components/marketplace/offer-cta-button";
+import { TradeStartPanel } from "@/components/marketplace/trade-start-panel";
 import { getOffer } from "@/lib/api";
 import { formatCount, formatDuration, formatPercent, formatRate, formatRmb } from "@/lib/money";
 import { formatDate } from "@/lib/date";
@@ -121,7 +121,7 @@ export default async function OfferDetailsPage({
             </dl>
 
             <div className="mt-5">
-              <OfferCtaButton label={`${action} ${formatRmb(offer.availableRmb)}`} />
+              <TradeStartPanel offer={offer} action={action} />
             </div>
 
             <p className="mt-3 flex items-start gap-1.5 text-[11.5px] text-neutral-400">

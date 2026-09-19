@@ -1,6 +1,7 @@
-import { ahead } from "../date";
-import { applyBps, convertRmbToNgn, toMinor, toScaledRate } from "../money";
-import type { Trade, TradeFees, TradeState } from "../types";
+import { ahead, NOW } from "../date";
+import { applyBps, convertRmbToNgn, formatRate, toMinor, toScaledRate } from "../money";
+import { clampRate, proposalBounds, type NegotiationResult } from "../negotiation";
+import type { Minor, Offer, RateNegotiation, Trade, TradeFees, TradeState } from "../types";
 import { marketReferenceRate } from "./offers";
 import { traders } from "./users";
 
@@ -358,6 +359,150 @@ export const allTrades: Trade[] = [
 export const activeTrades: Trade[] = allTrades.filter(
   (t) => t.state === "FUNDS_RESERVED" || t.state === "PAYMENT_PENDING",
 );
+
+// ---------------------------------------------------------------------------
+// Trade creation — the real "Buy"/"Sell" flow, not a seed
+// ---------------------------------------------------------------------------
+//
+// Not a database — an in-memory array that lives for this server process,
+// the same footing as every other piece of "no DB yet" state this phase
+// runs on (see api.ts's header comment: swapping this for real persistence
+// later is a one-line change per function, no screen edits). Resets on
+// restart, and isn't safe for concurrent users — fine for a single-user
+// mock preview, not fine past it.
+
+export const createdTrades: Trade[] = [];
+let createdSequence = 90000;
+
+/**
+ * Trade starts one step past rate negotiation: rate already locked, RMB
+ * already reserved, waiting on the buyer's payment. `negotiation` (PRD §13),
+ * when supplied, is a real chat transcript the buyer just had on the offer
+ * page (see `lib/negotiation.ts` + `RateNegotiationPanel`) — its final rate
+ * is re-clamped against the same bounds the client UI enforced, never
+ * trusted as-is, the same discipline `amountRmb` already gets below.
+ * Omitted, the trade simply accepts the offer's listed rate outright.
+ */
+export function createTradeFromOffer(
+  offer: Offer,
+  amountRmb: Minor,
+  negotiation?: NegotiationResult,
+): Trade {
+  createdSequence += 1;
+  const id = `trd_${createdSequence}`;
+  const reference = `SCX-${createdSequence}`;
+  const now = NOW.toISOString();
+
+  // The offer's side is the counterparty's side — the signed-in user takes the other one.
+  const isBuying = offer.side === "sell";
+  const counterparty = offer.trader;
+  const buyer = isBuying ? traders.wealth : counterparty;
+  const seller = isBuying ? counterparty : traders.wealth;
+
+  const bounds = proposalBounds(offer.rate, isBuying ? "Buy" : "Sell");
+  const rate = negotiation
+    ? clampRate(negotiation.finalRate, Math.min(bounds.min, bounds.max), Math.max(bounds.min, bounds.max))
+    : offer.rate;
+
+  const amountNgn = convertRmbToNgn(amountRmb, rate);
+  const rail = offer.rails[0];
+
+  const negotiations: RateNegotiation[] = negotiation
+    ? negotiation.transcript.map((turn, i) => ({
+        id: `neg_${id}_${i + 1}`,
+        tradeId: id,
+        proposedBy: turn.by,
+        rate: turn.rate,
+        status: i === negotiation.transcript.length - 1 ? "accepted" : "countered",
+        createdAt: now,
+      }))
+    : [
+        {
+          id: `neg_${id}_1`,
+          tradeId: id,
+          proposedBy: isBuying ? "seller" : "buyer",
+          rate: offer.rate,
+          status: "accepted",
+          createdAt: now,
+        },
+      ];
+
+  const rateMessage = negotiation
+    ? `Rate negotiated from ${formatRate(offer.rate)} to ${formatRate(rate)}/RMB and locked.`
+    : `Trade opened at ${offer.trader.username}'s listed rate of ${formatRate(offer.rate)}/RMB.`;
+
+  const trade: Trade = {
+    id,
+    reference,
+    offerId: offer.id,
+    state: "FUNDS_RESERVED",
+    side: isBuying ? "buy" : "sell",
+    buyer,
+    seller,
+    amountRmb,
+    rate,
+    marketRate: marketReferenceRate,
+    amountNgn,
+    fees: computeFees(amountNgn),
+    rail,
+    payeeLabel: "ScarExchange Official",
+    payeeAccount: rail === "wechat" ? "ScarExchange_Escrow" : "138 0000 8888",
+    createdAt: now,
+    paymentDeadline: ahead(15, "min"),
+    completedAt: null,
+    disputeId: null,
+    rating: null,
+    negotiations,
+    events: [
+      {
+        id: `ev_${id}_1`,
+        tradeId: id,
+        type: "trade_created",
+        label: "Trade Created",
+        description: null,
+        actorId: counterparty.id,
+        actorLabel: counterparty.username,
+        createdAt: now,
+      },
+      {
+        id: `ev_${id}_2`,
+        tradeId: id,
+        type: "rate_locked",
+        label: "Rate Locked",
+        description: `Both parties agreed ${formatRate(rate)} per RMB.`,
+        actorId: null,
+        actorLabel: "ScarExchange",
+        createdAt: now,
+      },
+      {
+        id: `ev_${id}_3`,
+        tradeId: id,
+        type: "funds_reserved",
+        label: "RMB Secured",
+        description: "Waiting for payment",
+        actorId: null,
+        actorLabel: "ScarExchange",
+        createdAt: now,
+      },
+    ],
+    messages: [
+      {
+        id: `msg_${id}_1`,
+        tradeId: id,
+        senderId: null,
+        kind: "system",
+        body: rateMessage,
+        attachmentUrl: null,
+        createdAt: now,
+        readAt: null,
+      },
+    ],
+    evidence: [],
+  };
+
+  createdTrades.push(trade);
+  return trade;
+}
 
 // ---------------------------------------------------------------------------
 // History summary tiles

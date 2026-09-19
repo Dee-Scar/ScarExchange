@@ -1,7 +1,13 @@
 import { adminUsers, auditLog, disputes, riskEvents, settlements } from "./mock/admin";
 import { notifications } from "./mock/notifications";
+import {
+  NOTIFICATION_CATEGORIES,
+  NOTIFICATION_CHANNELS,
+  notificationPreferences,
+} from "./mock/preferences";
 import { buyOffers, myOffers, offers } from "./mock/offers";
-import { activeTrades, allTrades, tradeHistory } from "./mock/trades";
+import { activeTrades, allTrades, createdTrades, createTradeFromOffer, tradeHistory } from "./mock/trades";
+import type { NegotiationResult } from "./negotiation";
 import {
   currentUser,
   currentUserBankAccounts,
@@ -9,6 +15,7 @@ import {
   currentUserPaymentMethods,
   traderList,
 } from "./mock/users";
+import { addWalletEntry, getWalletBalance, walletEntries } from "./mock/wallet";
 import type {
   AdminUser,
   AppNotification,
@@ -16,6 +23,10 @@ import type {
   BankAccount,
   Dispute,
   KycVerification,
+  Minor,
+  NotificationCategory,
+  NotificationChannel,
+  NotificationPreferences,
   Offer,
   PaymentRail,
   RiskEvent,
@@ -26,6 +37,7 @@ import type {
   TraderSummary,
   User,
   UserPaymentMethod,
+  WalletEntry,
 } from "./types";
 
 /**
@@ -118,6 +130,11 @@ export async function getMyOffers(): Promise<Offer[]> {
   return resolve(myOffers);
 }
 
+/** Every offer platform-wide, both sides plus the signed-in user's own (PRD §34 admin Offers screen). */
+export async function getAllOffers(): Promise<Offer[]> {
+  return resolve([...offers, ...buyOffers, ...myOffers]);
+}
+
 /**
  * Quick Trade (PRD §32): surface the single best offer under three lenses so
  * the user picks an intent rather than reading a table.
@@ -158,7 +175,7 @@ export interface TradeQuery {
 export async function getTrades(query: TradeQuery = {}): Promise<Trade[]> {
   const { side = "all", status = "all" } = query;
 
-  const filtered = tradeHistory.filter((trade) => {
+  const filtered = [...tradeHistory, ...createdTrades].filter((trade) => {
     if (side !== "all" && trade.side !== side) return false;
     if (status !== "all" && statusBucket(trade) !== status) return false;
     if (query.rails?.length && !query.rails.includes(trade.rail)) return false;
@@ -193,14 +210,33 @@ export function statusBucket(
 }
 
 export async function getTrade(reference: string): Promise<Trade | null> {
-  const match = allTrades.find(
+  const match = [...allTrades, ...createdTrades].find(
     (t) => t.reference.toLowerCase() === reference.toLowerCase(),
   );
   return resolve(match ?? null);
 }
 
 export async function getActiveTrades(): Promise<Trade[]> {
-  return resolve(activeTrades);
+  return resolve([...activeTrades, ...createdTrades]);
+}
+
+/**
+ * POST /trades — accepts an offer's listed rate outright (no negotiation UI
+ * yet) and opens a real trade. The amount is re-clamped to the offer's own
+ * limits server-side, never trusted as-is from the client.
+ */
+export async function createTrade(
+  offerId: string,
+  amountRmb: Minor,
+  negotiation?: NegotiationResult,
+): Promise<Trade> {
+  const offer = await getOffer(offerId);
+  if (!offer) throw new Error(`Offer ${offerId} not found`);
+
+  const ceiling = Math.min(offer.maxOrderRmb, offer.availableRmb);
+  const clamped = Math.min(Math.max(amountRmb, offer.minOrderRmb), ceiling);
+
+  return resolve(createTradeFromOffer(offer, clamped, negotiation));
 }
 
 // ---------------------------------------------------------------------------
@@ -214,6 +250,11 @@ export async function getTraders(): Promise<TraderSummary[]> {
 export async function getTrader(username: string): Promise<TraderSummary | null> {
   const needle = username.toLowerCase().replace(/^@/, "");
   return resolve(traderList.find((t) => t.username.toLowerCase() === needle) ?? null);
+}
+
+/** Verified Merchants directory (PRD §47, §33). */
+export async function getMerchants(): Promise<TraderSummary[]> {
+  return resolve(traderList.filter((t) => t.isMerchant));
 }
 
 // ---------------------------------------------------------------------------
@@ -233,11 +274,69 @@ export async function getBankAccounts(): Promise<BankAccount[]> {
 }
 
 // ---------------------------------------------------------------------------
+// Wallet — GET /wallet, POST /wallet/deposit, POST /wallet/withdraw
+// ---------------------------------------------------------------------------
+
+export async function getWallet(): Promise<{ balanceNgn: Minor; entries: WalletEntry[] }> {
+  return resolve({
+    balanceNgn: getWalletBalance(),
+    entries: [...walletEntries].reverse(),
+  });
+}
+
+function requireOwnBankAccount(bankAccountId: string): BankAccount {
+  const account = currentUserBankAccounts.find((a) => a.id === bankAccountId);
+  if (!account) throw new Error("That bank account isn't on your profile.");
+  return account;
+}
+
+export async function depositToWallet(bankAccountId: string, amountNgn: Minor): Promise<WalletEntry> {
+  requireOwnBankAccount(bankAccountId);
+  if (!Number.isFinite(amountNgn) || amountNgn <= 0) {
+    throw new Error("Enter an amount greater than ₦0.");
+  }
+  return resolve(addWalletEntry("deposit", amountNgn, bankAccountId));
+}
+
+export async function withdrawFromWallet(bankAccountId: string, amountNgn: Minor): Promise<WalletEntry> {
+  requireOwnBankAccount(bankAccountId);
+  if (!Number.isFinite(amountNgn) || amountNgn <= 0) {
+    throw new Error("Enter an amount greater than ₦0.");
+  }
+  if (amountNgn > getWalletBalance()) {
+    throw new Error("That's more than your available balance.");
+  }
+  return resolve(addWalletEntry("withdrawal", amountNgn, bankAccountId));
+}
+
+// ---------------------------------------------------------------------------
 // Notifications
 // ---------------------------------------------------------------------------
 
 export async function getNotifications(): Promise<AppNotification[]> {
   return resolve(notifications);
+}
+
+/** GET /me/notification-preferences */
+export async function getNotificationPreferences(): Promise<NotificationPreferences> {
+  return resolve(structuredClone(notificationPreferences));
+}
+
+/**
+ * PUT /me/notification-preferences — category and channel arrive as plain
+ * strings from a Server Action, so both are checked against the known lists
+ * rather than trusted (an unknown key would otherwise silently grow the record).
+ */
+export async function setNotificationPreference(
+  category: NotificationCategory,
+  channel: NotificationChannel,
+  enabled: boolean,
+): Promise<void> {
+  if (!NOTIFICATION_CATEGORIES.includes(category) || !NOTIFICATION_CHANNELS.includes(channel)) {
+    throw new Error("Unknown notification setting.");
+  }
+  notificationPreferences[category][channel] = enabled;
+  return resolve(undefined);
 }
 
 // ---------------------------------------------------------------------------

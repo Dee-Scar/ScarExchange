@@ -76,6 +76,27 @@ export interface BankAccount {
 }
 
 // ---------------------------------------------------------------------------
+// Wallet (PRD §22, §44)
+// ---------------------------------------------------------------------------
+
+export type WalletEntryType = "deposit" | "withdrawal";
+
+/**
+ * A single ledger movement, never a mutated balance field — PRD §44 is
+ * explicit that `user.balance = 500000` isn't the right shape even for a
+ * mock. The wallet's balance is always the sum of these.
+ */
+export interface WalletEntry {
+  id: string;
+  userId: string;
+  type: WalletEntryType;
+  /** Always positive; `type` carries the direction. */
+  amountNgn: Minor;
+  bankAccountId: string;
+  createdAt: ISODateString;
+}
+
+// ---------------------------------------------------------------------------
 // Users, KYC and reputation (PRD §6, §8, §21)
 // ---------------------------------------------------------------------------
 
@@ -477,6 +498,14 @@ export interface AppNotification {
   read: boolean;
   createdAt: ISODateString;
 }
+
+/** PRD §27 channels: in-app; push; email; SMS where appropriate. */
+export type NotificationChannel = "in_app" | "push" | "email" | "sms";
+
+export type NotificationPreferences = Record<
+  NotificationCategory,
+  Record<NotificationChannel, boolean>
+>;
 
 // ---------------------------------------------------------------------------
 // Admin (PRD §34, §35, §36)

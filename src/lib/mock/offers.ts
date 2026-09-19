@@ -1,6 +1,6 @@
 import { ago } from "../date";
-import { toMinor, toScaledRate } from "../money";
-import type { Offer, PaymentMethodMeta, PaymentRail } from "../types";
+import { fromScaledRate, toMinor, toScaledRate } from "../money";
+import type { Offer, PaymentMethodMeta, PaymentRail, ScaledRate } from "../types";
 import { traders } from "./users";
 
 /**
@@ -244,6 +244,113 @@ export const marketplaceHighlights = {
   verifiedMerchants: 128,
   totalSellers: 42,
 };
+
+// ---------------------------------------------------------------------------
+// Rate comparison table (/rates)
+// ---------------------------------------------------------------------------
+//
+// "Best Rate" per rail is computed live from the real offers above — never
+// duplicated here. Market Average, 24h Change and Available Traders have no
+// real per-rail source (only ~7 traders are seeded, total, across every
+// rail), so these are independent platform-scale marketing figures — the
+// same footing as the homepage's "12,450+ Active Traders" — not a claim
+// about the seed data. USDT is listed unavailable: the PRD names
+// cryptocurrency trading as an explicit MVP non-goal (§5).
+
+export interface RateComparisonRow {
+  rail: PaymentRail | "usdt";
+  label: string;
+  blurb: string;
+  marketAverage: ScaledRate;
+  changePercent: number;
+  traderCount: number;
+  available: boolean;
+}
+
+export const rateComparisonRows: RateComparisonRow[] = [
+  {
+    rail: "alipay",
+    label: "Alipay",
+    blurb: "Fast · Secure · Popular",
+    marketAverage: toScaledRate(218.75),
+    changePercent: 1.12,
+    traderCount: 4230,
+    available: true,
+  },
+  {
+    rail: "wechat",
+    label: "WeChat Pay",
+    blurb: "Fast · Secure · Widely used",
+    marketAverage: toScaledRate(219.6),
+    changePercent: 0.96,
+    traderCount: 3842,
+    available: true,
+  },
+  {
+    rail: "bank_transfer",
+    label: "Bank Transfer",
+    blurb: "Reliable · High limits",
+    marketAverage: toScaledRate(220.75),
+    changePercent: -0.45,
+    traderCount: 2167,
+    available: true,
+  },
+  {
+    rail: "usdt",
+    label: "USDT",
+    blurb: "Not yet supported on ScarExchange",
+    marketAverage: toScaledRate(221.8),
+    changePercent: 0.73,
+    traderCount: 0,
+    available: false,
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Rate trend chart (/rates) — deterministic, not real history. Same
+// generation approach as admin.ts's volumeTrend: a seeded wobble, not
+// Math.random, so the server and client render identical points.
+// ---------------------------------------------------------------------------
+
+export type RateRange = "24H" | "7D" | "30D" | "90D";
+
+const RANGE_POINTS: Record<RateRange, number> = { "24H": 24, "7D": 7, "30D": 30, "90D": 90 };
+const RANGE_UNIT: Record<RateRange, "hour" | "day"> = {
+  "24H": "hour",
+  "7D": "day",
+  "30D": "day",
+  "90D": "day",
+};
+
+function rateWobble(seed: number): number {
+  const x = Math.sin(seed * 78.233) * 12345.6789;
+  return x - Math.floor(x);
+}
+
+export interface RateTrendPoint {
+  at: string;
+  rate: number;
+}
+
+/** The most recent point always equals the real current reference rate. */
+export function buildRateTrend(range: RateRange): RateTrendPoint[] {
+  const count = RANGE_POINTS[range];
+  const unit = RANGE_UNIT[range];
+  const base = fromScaledRate(marketReferenceRate);
+  const low = fromScaledRate(marketRateLow);
+  const high = fromScaledRate(marketRateHigh);
+  const band = high - low;
+
+  return Array.from({ length: count }, (_, i) => {
+    const swing = (rateWobble(i + count * 13) - 0.5) * band * 0.7;
+    const drift = low + band * 0.4 + (i / Math.max(1, count - 1)) * band * 0.3;
+    const raw = i === count - 1 ? base : Math.min(high, Math.max(low, drift + swing));
+    return {
+      at: ago(count - 1 - i, unit),
+      rate: Math.round(raw * 100) / 100,
+    };
+  });
+}
 
 // ---------------------------------------------------------------------------
 // Marketplace headline stats (Sell RMB design) — mirrors the buy-side block

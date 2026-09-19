@@ -2,31 +2,12 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import {
-  Banknote,
-  Building2,
-  CreditCard,
-  KeyRound,
-  Laptop,
-  Lock,
-  Phone,
-  ShieldCheck,
-  Smartphone,
-  Wallet,
-} from "lucide-react";
+import { KeyRound, Laptop, ShieldCheck, Smartphone } from "lucide-react";
 import { Panel } from "@/components/kit/primitives";
+import { SENSITIVE_ACTIONS } from "@/components/security/sensitive-actions";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { formatRelative } from "@/lib/date";
-
-const SENSITIVE_ACTIONS = [
-  { icon: Lock, label: "Changing your password" },
-  { icon: Phone, label: "Changing your phone number" },
-  { icon: Building2, label: "Changing your bank account" },
-  { icon: CreditCard, label: "Changing a payment account" },
-  { icon: Banknote, label: "Large transactions" },
-  { icon: Wallet, label: "Withdrawals and settlements" },
-];
 
 /** Security & account settings (PRD §28). No backend yet — toggles are local. */
 export function SecuritySettings({

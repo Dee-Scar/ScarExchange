@@ -22,6 +22,7 @@ import { TraderAvatar } from "@/components/kit/trader";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -187,12 +188,14 @@ function AppHeader({
             <ChevronDown className="hidden size-4 text-neutral-400 sm:block" strokeWidth={2} />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-60">
-            <DropdownMenuLabel className="font-normal">
-              <p className="text-[13px] font-semibold text-neutral-900 dark:text-white">
-                {currentUser.fullName}
-              </p>
-              <p className="text-xs text-neutral-500">@{currentUser.username}</p>
-            </DropdownMenuLabel>
+            <DropdownMenuGroup>
+              <DropdownMenuLabel className="font-normal">
+                <p className="text-[13px] font-semibold text-neutral-900 dark:text-white">
+                  {currentUser.fullName}
+                </p>
+                <p className="text-xs text-neutral-500">@{currentUser.username}</p>
+              </DropdownMenuLabel>
+            </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <MenuLink href="/profile" icon={UserIcon}>
               Profile

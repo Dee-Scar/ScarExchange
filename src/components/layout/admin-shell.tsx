@@ -10,6 +10,7 @@ import { MenuLink } from "@/components/kit/menu-link";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -107,12 +108,14 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 <ChevronDown className="hidden size-4 text-neutral-400 sm:block" strokeWidth={2} />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel className="font-normal">
-                  <p className="text-[13px] font-semibold text-neutral-900 dark:text-white">
-                    {currentAdmin.name}
-                  </p>
-                  <p className="text-xs text-neutral-500">{currentAdmin.email}</p>
-                </DropdownMenuLabel>
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel className="font-normal">
+                    <p className="text-[13px] font-semibold text-neutral-900 dark:text-white">
+                      {currentAdmin.name}
+                    </p>
+                    <p className="text-xs text-neutral-500">{currentAdmin.email}</p>
+                  </DropdownMenuLabel>
+                </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <MenuLink href="/admin/team" icon={UserCog}>
                   Admin Management

@@ -63,17 +63,31 @@ export function Stepper({
         const styles = stateStyles[step.state];
         const Icon = step.icon;
         const isLast = index === steps.length - 1;
-        const nextDone = !isLast && steps[index + 1].state !== "pending";
 
         return (
-          <li
-            key={step.id}
-            className={cn("flex min-w-0 flex-col items-center", !isLast && "flex-1")}
-          >
-            <div className="flex w-full items-center">
+          <li key={step.id} className="flex min-w-0 flex-1 flex-col items-center">
+            {/*
+              The connector has to reach exactly from this node's centre to
+              the next one's — anchoring it to the label row (which the node
+              row's width doesn't match once the connector itself stretches)
+              is what put the two out of alignment. Instead it's absolutely
+              positioned inside a track the same height as the node, centred
+              on that track's mid-line, so it lines up regardless of size.
+            */}
+            <div className={cn("relative flex w-full items-center justify-center", nodeSize)}>
+              {!isLast && (
+                <span
+                  className={cn(
+                    "absolute left-1/2 top-1/2 h-0.5 w-full -translate-y-1/2 rounded-full transition-colors",
+                    step.state === "completed"
+                      ? "bg-success-500"
+                      : "bg-neutral-200 dark:bg-neutral-700",
+                  )}
+                />
+              )}
               <span
                 className={cn(
-                  "grid shrink-0 place-items-center rounded-full font-semibold transition-colors",
+                  "relative z-10 grid shrink-0 place-items-center rounded-full font-semibold transition-colors",
                   nodeSize,
                   styles.node,
                 )}
@@ -86,22 +100,9 @@ export function Stepper({
                   <span className={size === "sm" ? "text-xs" : "text-sm"}>{index + 1}</span>
                 )}
               </span>
-
-              {!isLast && (
-                <span
-                  className={cn(
-                    "mx-2 h-0.5 min-w-4 flex-1 rounded-full transition-colors",
-                    step.state === "completed" && nextDone
-                      ? "bg-success-500"
-                      : step.state === "completed"
-                        ? "bg-success-500"
-                        : "bg-neutral-200 dark:bg-neutral-700",
-                  )}
-                />
-              )}
             </div>
 
-            <div className={cn("mt-2 px-1 text-center", !isLast && "w-full")}>
+            <div className="mt-2 w-full px-1 text-center">
               <p className={cn("text-[13px] font-medium leading-snug", styles.label)}>
                 {numbered && (
                   <span className="mr-1 text-neutral-400">{index + 1}</span>
